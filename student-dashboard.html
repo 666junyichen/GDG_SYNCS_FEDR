@@ -401,7 +401,7 @@
     const byDate={};
     function addEv(ds,ev){ if(!ds)return; if(!byDate[ds])byDate[ds]=[]; byDate[ds].push(ev); }
 
-    const assignments=getAssignments().filter(a=>a.assignedTo===STUDENT_NAME);
+    const assignments=getAssignments().filter(a=>a.student===STUDENT_NAME);
     const submissions=getSubmissions();
     assignments.forEach(a=>{ if(!a.dueDate)return; const sub=submissions.find(s=>s.taskId==a.id&&s.studentName===STUDENT_NAME); addEv(a.dueDate,{ label:a.title, cls:sub?'type-teacher-submitted':'type-teacher-'+(a.priority||'medium'), type:'📋 Teacher task', due:a.dueDate, priority:a.priority, status:sub?'Submitted ✓':'Pending', note:a.desc }); });
     schedule.forEach(e=>{ const ds=e.time?e.time.split('T')[0]:null; if(!ds)return; const timeStr=e.time?new Date(e.time).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}):''; addEv(ds,{ label:(timeStr?timeStr+' ':'')+e.title, cls:'type-personal', type:'📅 Personal event', due:ds, status:'', note:e.notes }); });
