@@ -16,16 +16,17 @@
     .badge-overdue{background:rgba(239,68,68,.15);color:#f87171}
     .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100}
     .overlay.open{display:block}
-    .modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1d27;border:1px solid #2a2d3a;border-radius:16px;padding:1.75rem;width:min(520px,92vw);z-index:101;max-height:90vh;overflow-y:auto}
+    .modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1d27;border:1px solid #2a2d3a;border-radius:16px;padding:1.75rem;width:min(520px,92vw);z-index:101;max-height:min(90vh,760px);overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable}
     .modal.open{display:block}
     .modal-title{font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:1.25rem}
     .modal-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem}
     .form-group{margin-bottom:1rem}
     .form-label{display:block;font-size:.8rem;color:#888;margin-bottom:.35rem;text-transform:uppercase;font-weight:600;letter-spacing:.03em}
-    .form-control{width:100%;padding:.65rem .9rem;background:#13151e;border:1px solid #2a2d3a;border-radius:8px;color:#fff;font-size:.9rem;outline:none;transition:border-color .15s}
+    .form-control{width:100%;padding:.65rem .9rem;background:#13151e;border:1px solid #2a2d3a;border-radius:8px;color:#fff;font-size:.9rem;outline:none;transition:border-color .15s;color-scheme:dark}
     .form-control:focus{border-color:#4f6ef7}
     .form-control::placeholder{color:#444}
     textarea.form-control{resize:vertical;min-height:80px}
+    input[type="date"].form-control{min-height:42px;cursor:text}
     .btn{padding:.6rem 1.2rem;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
     .btn-primary{background:#4f6ef7;color:#fff}
     .btn-primary:hover{background:#3a56e8}
@@ -240,7 +241,7 @@
   </div>
   <div class="form-group">
     <label class="form-label">Due Date</label>
-    <input type="date" id="at-date" class="form-control" />
+    <input type="date" id="at-date" class="form-control" min="2020-01-01" max="2035-12-31" />
   </div>
   <div id="assign-error" style="color:#f87171;font-size:.82rem;display:none;margin-bottom:.5rem;"></div>
   <div class="modal-footer">
@@ -361,8 +362,10 @@
 
   function openAssignModal() {
     buildStudentChecklist();
+    document.getElementById('assign-error').style.display='none';
     document.getElementById('assign-overlay').classList.add('open');
     document.getElementById('assign-modal').classList.add('open');
+    setTimeout(()=>document.getElementById('at-title').focus(),0);
   }
   function closeAssignModal() {
     document.getElementById('assign-overlay').classList.remove('open');
