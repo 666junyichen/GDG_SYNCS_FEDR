@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFlow – Teacher Dashboard</title>
-  <link rel="stylesheet" href="css/style" />
-  <link rel="stylesheet" href="css/pages" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/pages.css" />
   <style>
     .role-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(79,110,247,.15);color:#7a9af8;border:1px solid rgba(79,110,247,.25);border-radius:20px;font-size:.72rem;font-weight:600;padding:.2rem .7rem;letter-spacing:.04em;text-transform:uppercase}
     .submission-row{cursor:pointer;transition:background .1s}
@@ -74,7 +74,7 @@
         <span class="nav-icon">📋</span> Assigned Tasks
         <span class="nav-badge" id="sidebar-task-count">0</span>
       </a>
-      <a href="#" class="nav-item" onclick="showTabs('submissions');return false;">
+      <a href="#" class="nav-item" onclick="showTab('submissions');return false;">
         <span class="nav-icon">📬</span> Submissions
       </a>
       <a href="settings.html" class="nav-item">
@@ -129,7 +129,7 @@
 
       <div class="tab-bar">
         <div class="tab active" id="tab-assigned"    onclick="showTab('assigned')">Assigned Tasks</div>
-        <div class="tab"        id="tab-submissions" onclick="showTabs('submissions')">Submissions</div>
+        <div class="tab"        id="tab-submissions" onclick="showTab('submissions')">Submissions</div>
         <div class="tab"        id="tab-setting"     onclick="showTab('settings')">⚙️ Settings</div>
       </div>
 
