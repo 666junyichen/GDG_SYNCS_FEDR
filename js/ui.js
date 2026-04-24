@@ -38,11 +38,16 @@
     const title    = document.getElementById('f-title').value.trim();
     const desc     = document.getElementById('f-desc').value.trim();
     const priority = document.getElementById('f-priority').value;
-    const dueDate  = document.getElementById('f-date').value;
+    const dueDate  = normalizeDateInput(document.getElementById('f-date').value);
 
     
     if (!title) {
       showToast('⚠️ Please enter a task title.');
+      return;
+    }
+
+    if (dueDate === null) {
+      showToast('Please enter the due date as YYYY-MM-DD.');
       return;
     }
 

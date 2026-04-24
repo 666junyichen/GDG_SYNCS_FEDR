@@ -31,8 +31,22 @@ function createTask(title, desc, priority, dueDate) {
   };
 }
 
+function normalizeDateInput(value) {
+  const raw = (value || '').trim();
+  if (!raw) return '';
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return raw;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const d = new Date(dateStr + 'T00:00:00');
   
   return d.toLocaleDateString('en-AU', { day: '2-digit', month: 'numeric', year: 'numeric' });

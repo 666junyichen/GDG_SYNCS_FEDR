@@ -180,7 +180,7 @@
           <div style="font-size:.82rem;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;">Add Personal Event</div>
           <div class="cal-add-row">
             <input type="text" id="sc-title" class="form-control" placeholder="Event title" style="flex:2;min-width:140px;" />
-            <input type="datetime-local" id="sc-time" class="form-control" style="flex:2;min-width:180px;" />
+            <input type="text" id="sc-time" class="form-control" placeholder="YYYY-MM-DD HH:mm" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}" style="flex:2;min-width:180px;" />
             <input type="text" id="sc-notes" class="form-control" placeholder="Notes (optional)" style="flex:2;min-width:140px;" />
             <button class="btn" style="background:#a855f7;color:#fff;flex-shrink:0;" type="button" onclick="saveScheduleEven()">+ Add</button>
           </div>
@@ -273,7 +273,7 @@
   <div class="form-group"><label class="form-label">Priority</label>
     <select id="ot-priority" class="form-control"><option value="medium">🟡 Medium</option><option value="high">🔴 High</option><option value="low">🟢 Low</option></select>
   </div>
-  <div class="form-group"><label class="form-label">Due Date</label><input type="date" id="ot-date" class="form-control" /></div>
+  <div class="form-group"><label class="form-label">Due Date</label><input type="text" id="ot-date" class="form-control" placeholder="YYYY-MM-DD" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2}" /></div>
   <div id="ot-error" style="color:#f87171;font-size:.82rem;display:none;margin-bottom:.5rem;"></div>
   <div class="modal-footer">
     <button class="btn btn-ghost" onclick="closeOwnTaskModal()">Cancel</button>
@@ -353,7 +353,7 @@
 
       const bc=sub?'badge-submitted':overdue?'badge-overdue':'badge-pending';
       const bt=sub?'Submitted':overdue?'Overdue':'Pending';
-      const due=a.dueDate?new Date(a.dueDate+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'No due date';
+      const due=a.dueDate || 'No due date';
       const dot={high:'🔴',medium:'🟡',low:'🟢'}[a.priority]||'';
       const teacherName = a.createdBy ? (getAccounts().find(acc=>acc.email===a.createdBy)?.name||a.createdBy) : 'Teacher';
       return `<div class="task-card">
@@ -397,6 +397,26 @@
   }
   function goToday(){ calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendar(); }
 
+  function normalizeDateInput(value) {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? raw : null;
+  }
+
+  function normalizeDateTimeInput(value) {
+    const raw = (value || '').trim();
+    const match = raw.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const date = normalizeDateInput(match[1]);
+    const hour = Number(match[2]), minute = Number(match[3]);
+    if (!date || hour > 23 || minute > 59) return null;
+    return `${date}T${match[2]}:${match[3]}`;
+  }
+
   function renderCalendar(){
     const schedule=getSchedule(), ownTasks=getOwnTasks();
     document.getElementById('cal-month-label').textContent=new Date(calYear,calMonth,1).toLocaleString('en-AU',{month:'long',year:'numeric'});
@@ -408,7 +428,7 @@
     const assignments=getAssignments().filter(a=>a.student===STUDENT_NAME);
     const submissions=getSubmissions();
     assignments.forEach(a=>{ if(!a.dueDate)return; const sub=submissions.find(s=>s.taskId==a.id&&s.studentName===STUDENT_NAME); addEv(a.dueDate,{ label:a.title, cls:sub?'type-teacher-submitted':'type-teacher-'+(a.priority||'medium'), type:'📋 Teacher task', due:a.dueDate, priority:a.priority, status:sub?'Submitted ✓':'Pending', note:a.desc }); });
-    schedule.forEach(e=>{ const ds=e.time?e.time.split('T')[0]:null; if(!ds)return; const timeStr=e.time?new Date(e.time).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}):''; addEv(ds,{ label:(timeStr?timeStr+' ':'')+e.title, cls:'type-personal', type:'📅 Personal event', due:ds, status:'', note:e.notes }); });
+    schedule.forEach(e=>{ const ds=e.time?e.time.split('T')[0]:null; if(!ds)return; const timeStr=e.time?e.time.split('T')[1]:''; addEv(ds,{ label:(timeStr?timeStr+' ':'')+e.title, cls:'type-personal', type:'📅 Personal event', due:ds, status:'', note:e.notes }); });
     ownTasks.filter(t=>t.dueDate).forEach(t=>{ addEv(t.dueDate,{ label:t.title, cls:'type-own', type:'✅ My task', due:t.dueDate, priority:t.priority, status:t.done?'Done ✓':'Pending', note:t.desc }); });
 
     const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -428,13 +448,13 @@
     document.getElementById('cal-grid').innerHTML=html;
   }
 
-  function showPopup(e,evJson){ e.stopPropagation(); const ev=JSON.parse(decodeURIComponent(evJson)); document.getElementById('popup-title').textContent=ev.label; document.getElementById('popup-type').textContent=ev.type||''; document.getElementById('popup-due').textContent=ev.due?'📅 Due: '+new Date(ev.due+'T00:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):''; document.getElementById('popup-status').textContent=ev.status?'● '+ev.status:''; document.getElementById('popup-note').textContent=ev.note?'"'+ev.note+'"':''; const popup=document.getElementById('cal-popup'); popup.classList.add('open'); popup.style.left=Math.min(e.clientX,window.innerWidth-240)+'px'; popup.style.top=(e.clientY+10)+'px'; }
+  function showPopup(e,evJson){ e.stopPropagation(); const ev=JSON.parse(decodeURIComponent(evJson)); document.getElementById('popup-title').textContent=ev.label; document.getElementById('popup-type').textContent=ev.type||''; document.getElementById('popup-due').textContent=ev.due?'📅 Due: '+ev.due:''; document.getElementById('popup-status').textContent=ev.status?'● '+ev.status:''; document.getElementById('popup-note').textContent=ev.note?'"'+ev.note+'"':''; const popup=document.getElementById('cal-popup'); popup.classList.add('open'); popup.style.left=Math.min(e.clientX,window.innerWidth-240)+'px'; popup.style.top=(e.clientY+10)+'px'; }
   function closePopup(){ document.getElementById('cal-popup').classList.remove('open'); }
   document.addEventListener('click',()=>closePopup());
 
   function saveScheduleEven(){
-    const title=document.getElementById('sc-title').value.trim(), time=document.getElementById('sc-time').value, err=document.getElementById('sc-error');
-    if(!title||!time){ err.textContent='Title and date/time are required.'; err.style.display='block'; return; }
+    const title=document.getElementById('sc-title').value.trim(), time=normalizeDateTimeInput(document.getElementById('sc-time').value), err=document.getElementById('sc-error');
+    if(!title||!time){ err.textContent='Title and date/time are required in YYYY-MM-DD HH:mm format.'; err.style.display='block'; return; }
     err.style.display='none';
     const events=getSchedule();
     events.push({ id:Date.now(), title, time, notes:document.getElementById('sc-notes').value.trim() });
@@ -446,10 +466,10 @@
     showToast('Event added!');
   }
 
-  function renderOwnTasks(){ const tasks=getOwnTasks(), el=document.getElementById('own-list'); if(!tasks.length){ el.innerHTML=`<div class="empty-state"><div style="font-size:2rem;margin-bottom:.5rem;">✅</div>No personal tasks yet.</div>`; return; } el.innerHTML=tasks.map(t=>{ const dot={high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'', due=t.dueDate?new Date(t.dueDate+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''; return `<div class="task-card"><div class="task-card-left"><div class="task-card-title" style="${t.done?'text-decoration:line-through;opacity:.5;':''}">${t.title}</div>${t.desc?`<div class="task-card-desc">${t.desc}</div>`:''}<div class="task-card-meta"><span class="badge badge-own">Personal</span>${dot} ${t.priority}${due?`<span>📅 ${due}</span>`:''}</div></div><div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0;"><button class="btn btn-ghost btn-sm" onclick="toggleOwnTask('${t.id}')">${t.done?'↩ Undo':'✓ Done'}</button><button class="btn btn-ghost btn-sm" onclick="deleteOwnTask('${t.id}')">🗑</button></div></div>`; }).join(''); }
+  function renderOwnTasks(){ const tasks=getOwnTasks(), el=document.getElementById('own-list'); if(!tasks.length){ el.innerHTML=`<div class="empty-state"><div style="font-size:2rem;margin-bottom:.5rem;">✅</div>No personal tasks yet.</div>`; return; } el.innerHTML=tasks.map(t=>{ const dot={high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'', due=t.dueDate||''; return `<div class="task-card"><div class="task-card-left"><div class="task-card-title" style="${t.done?'text-decoration:line-through;opacity:.5;':''}">${t.title}</div>${t.desc?`<div class="task-card-desc">${t.desc}</div>`:''}<div class="task-card-meta"><span class="badge badge-own">Personal</span>${dot} ${t.priority}${due?`<span>📅 ${due}</span>`:''}</div></div><div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0;"><button class="btn btn-ghost btn-sm" onclick="toggleOwnTask('${t.id}')">${t.done?'↩ Undo':'✓ Done'}</button><button class="btn btn-ghost btn-sm" onclick="deleteOwnTask('${t.id}')">🗑</button></div></div>`; }).join(''); }
   function openOwnTaskModal(){ document.getElementById('ot-error').style.display='none'; ['ot-title','ot-desc','ot-date'].forEach(id=>document.getElementById(id).value=''); document.getElementById('ot-priority').value='medium'; document.getElementById('own-overlay').classList.add('open'); document.getElementById('own-modal').classList.add('open'); }
   function closeOwnTaskModal(){ document.getElementById('own-overlay').classList.remove('open'); document.getElementById('own-modal').classList.remove('open'); }
-  function saveOwnTask(){ const title=document.getElementById('ot-title').value.trim(), err=document.getElementById('ot-error'); if(!title){ err.textContent='Title is required.'; err.style.display='block'; return; } err.style.display='none'; const tasks=getOwnTasks(); tasks.push({ id:Date.now(), title, desc:document.getElementById('ot-desc').value.trim(), priority:document.getElementById('ot-priority').value, dueDate:document.getElementById('ot-date').value, done:false, createdAt:new Date().toISOString() }); saveOwnTasks(tasks); closeOwnTaskModal(); renderOwnTasks(); renderStats(); showToast('Task added!'); }
+  function saveOwnTask(){ const title=document.getElementById('ot-title').value.trim(), dueDate=normalizeDateInput(document.getElementById('ot-date').value), err=document.getElementById('ot-error'); if(!title){ err.textContent='Title is required.'; err.style.display='block'; return; } if(dueDate===null){ err.textContent='Due date must use YYYY-MM-DD format.'; err.style.display='block'; return; } err.style.display='none'; const tasks=getOwnTasks(); tasks.push({ id:Date.now(), title, desc:document.getElementById('ot-desc').value.trim(), priority:document.getElementById('ot-priority').value, dueDate, done:false, createdAt:new Date().toISOString() }); saveOwnTasks(tasks); closeOwnTaskModal(); renderOwnTasks(); renderStats(); showToast('Task added!'); }
   function toggleOwnTask(id){ saveOwnTasks(getOwnTasks().map(t=>t.id==id?{...t,done:!t.done}:t)); renderOwnTasks(); }
   function deleteOwnTask(id){ saveOwnTasks(getOwnTasks().filter(t=>t.id!=id)); renderOwnTasks(); renderStats(); }
 
