@@ -137,7 +137,7 @@
       <h1 class="topbar-title">Student Dashboard</h1>
       <div class="topbar-actions topbar-meta">
         <span class="role-badge">🎓 Student</span>
-        <button class="signout-btn" type="button">Sign out</button>
+        <button class="signout-btn" type="button" onclick="signOut()">Sign out</button>
       </div>
     </header>
 
@@ -170,9 +170,9 @@
             </div>
           </div>
           <div class="cal-nav">
-            <button class="cal-nav-btn" type="button">‹</button>
+            <button class="cal-nav-btn" type="button" onclick="changeMonth(-1)">‹</button>
             <button class="cal-nav-btn" onclick="goToday()">Today</button>
-            <button class="cal-nav-btn" type="button">›</button>
+            <button class="cal-nav-btn" type="button" onclick="changeMonth(1)">›</button>
           </div>
         </div>
         <div class="cal-grid-wrap"><div class="cal-grid" id="cal-grid"></div></div>
@@ -182,7 +182,7 @@
             <input type="text" id="sc-title" class="form-control" placeholder="Event title" style="flex:2;min-width:140px;" />
             <input type="datetime-local" id="sc-time" class="form-control" style="flex:2;min-width:180px;" />
             <input type="text" id="sc-notes" class="form-control" placeholder="Notes (optional)" style="flex:2;min-width:140px;" />
-            <button class="btn" style="background:#a855f7;color:#fff;flex-shrink:0;" type="button">+ Add</button>
+            <button class="btn" style="background:#a855f7;color:#fff;flex-shrink:0;" type="button" onclick="saveScheduleEven()">+ Add</button>
           </div>
           <div id="sc-error" style="color:#f87171;font-size:.8rem;margin-top:.4rem;display:none;"></div>
         </div>
@@ -190,7 +190,7 @@
 
       <div id="panel-own" style="display:none;">
         <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
-          <button class="btn btn-primary-green" type="button">+ Add Task</button>
+          <button class="btn btn-primary-green" type="button" onclick="openOwnTaskModal()">+ Add Task</button>
         </div>
         <div id="own-list"></div>
       </div>
@@ -211,7 +211,7 @@
                   <div class="form-group" style="margin:0;"><label class="form-label">Display Name</label><input type="text" class="form-control" id="s-name" /></div>
                   <div class="form-group" style="margin:0;"><label class="form-label">Email</label><input type="email" class="form-control" id="s-email" /></div>
                   <div class="form-group" style="margin:0;"><label class="form-label">New Password</label><input type="password" class="form-control" id="s-pass" placeholder="Leave blank to keep current" /></div>
-                  <div><button class="btn btn-primary-green" type="button">Save Changes</button></div>
+                  <div><button class="btn btn-primary-green" type="button" onclick="saveProfile()">Save Changes</button></div>
                 </div>
               </div>
             </div>
@@ -243,7 +243,7 @@
               <div class="settings-card danger-zone">
                 <div class="settings-card-header"><div class="settings-card-title" style="color:#f87171;">⚠️ Danger Zone</div></div>
                 <div class="settings-card-body">
-                  <div class="settings-row"><div><div class="settings-row-label">Delete my personal tasks</div><div class="settings-row-sub">Permanently removes all your personal tasks.</div></div><button class="btn btn-danger" type="button">Delete All</button></div>
+                  <div class="settings-row"><div><div class="settings-row-label">Delete my personal tasks</div><div class="settings-row-sub">Permanently removes all your personal tasks.</div></div><button class="btn btn-danger" type="button" onclick="clearMyTasks()">Delete All</button></div>
                 </div>
               </div>
             </div>
@@ -296,7 +296,7 @@
   const user = JSON.parse(localStorage.getItem('tf_user')||'null');
   if (!user || user.role !== 'student') window.location.href = 'login.html';
 
-  const STUDENT_NAME = user?.name || '';
+  let STUDENT_NAME = user?.name || '';
 
   function signOut(){ localStorage.removeItem('tf_user'); window.location.href='login.html'; }
 
@@ -390,6 +390,10 @@
 
   let calYear=new Date().getFullYear(), calMonth=3;
   function changeMonth(d){
+    calMonth += d;
+    if(calMonth < 0){ calMonth = 11; calYear--; }
+    if(calMonth > 11){ calMonth = 0; calYear++; }
+    renderCalendar();
   }
   function goToday(){ calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendar(); }
 
@@ -474,14 +478,27 @@
     const name  = document.getElementById('s-name').value.trim();
     const email = document.getElementById('s-email').value.trim().toLowerCase();
     const pass  = document.getElementById('s-pass').value;
+    if(!name){ showToast('Name cannot be empty.'); return; }
     if(!email){ showToast('Email cannot be empty.'); return; }
+    const oldName = user.name;
+    const oldScheduleKey = 'tf_schedule_'+oldName;
+    const oldOwnKey = 'tf_own_'+oldName;
     const accounts=getAccounts(), idx=accounts.findIndex(a=>a.email===user.email);
     if(idx===-1){ showToast('Account not found.'); return; }
     accounts[idx].name=name;
     accounts[idx].email=email;
     if(pass) accounts[idx].password=pass;
     saveAccounts(accounts);
+    localStorage.setItem('tf_assignments', JSON.stringify(getAssignments().map(a=>a.student===oldName?{...a,student:name}:a)));
+    saveSubmissions(getSubmissions().map(s=>s.studentName===oldName?{...s,studentName:name}:s));
+    if(oldName!==name){
+      const schedule = localStorage.getItem(oldScheduleKey);
+      const ownTasks = localStorage.getItem(oldOwnKey);
+      if(schedule !== null){ localStorage.setItem('tf_schedule_'+name, schedule); localStorage.removeItem(oldScheduleKey); }
+      if(ownTasks !== null){ localStorage.setItem('tf_own_'+name, ownTasks); localStorage.removeItem(oldOwnKey); }
+    }
     user.name=name; user.email=email;
+    STUDENT_NAME=name;
     localStorage.setItem('tf_user',JSON.stringify(user));
     document.getElementById('sidebar-name').textContent=name;
     document.getElementById('sidebar-avatar').textContent=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
