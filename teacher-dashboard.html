@@ -241,7 +241,7 @@
   </div>
   <div class="form-group">
     <label class="form-label">Due Date</label>
-    <input type="text" id="at-date" class="form-control date-field" placeholder="YYYY-MM-DD" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2}" />
+    <input type="date" id="at-date" class="form-control date-field" />
   </div>
   <div id="assign-error" style="color:#f87171;font-size:.82rem;display:none;margin-bottom:.5rem;"></div>
   <div class="modal-footer">
@@ -395,7 +395,7 @@
     if (!title)           { errEl.textContent='Please enter a task title.'; errEl.style.display='block'; return; }
     if (!priority)        { errEl.textContent='Please select a priority.';  errEl.style.display='block'; return; }
     if (!selected.length) { errEl.textContent='Please select at least one student.'; errEl.style.display='block'; return; }
-    if (dueDate === null) { errEl.textContent='Please enter due date as YYYY-MM-DD.'; errEl.style.display='block'; return; }
+    if (dueDate === null) { errEl.textContent='Please choose a valid due date.'; errEl.style.display='block'; return; }
     errEl.style.display='none';
     const assignments = getAssignments();
     selected.forEach(studentName => {
